@@ -381,6 +381,7 @@ pub fn withdraw_amounts_with_slippage(
     Ok((pc_amount, coin_amount))
 }
 
+/// Returns (`quote amount`, `slippage_adjusted quote amount`)
 pub fn swap_with_slippage(
     pc_vault_amount: u64,
     coin_vault_amount: u64,
@@ -390,7 +391,7 @@ pub fn swap_with_slippage(
     amount_specified: u64,
     swap_base_in: bool,
     slippage_bps: u64,
-) -> Result<u64> {
+) -> Result<(u64, u64)> {
     let other_amount_threshold = swap_exact_amount(
         pc_vault_amount,
         coin_vault_amount,
@@ -403,6 +404,7 @@ pub fn swap_with_slippage(
         amount_specified,
         swap_base_in,
     )?;
+    let quote = other_amount_threshold;
     let other_amount_threshold = if swap_base_in {
         // min out
         min_amount_with_slippage(other_amount_threshold, slippage_bps)
@@ -410,5 +412,5 @@ pub fn swap_with_slippage(
         // max in
         max_amount_with_slippage(other_amount_threshold, slippage_bps)
     };
-    Ok(other_amount_threshold)
+    Ok((quote, other_amount_threshold))
 }

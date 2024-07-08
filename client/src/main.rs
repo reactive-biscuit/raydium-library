@@ -237,7 +237,7 @@ async fn send_swap_tx() -> Result<()> {
     } else {
         amm::utils::SwapDirection::PC2Coin
     };
-    let other_amount_threshold = raydium_library::amm::swap_with_slippage(
+    let (_, other_amount_threshold) = raydium_library::amm::swap_with_slippage(
         result.pool_pc_vault_amount,
         result.pool_coin_vault_amount,
         result.swap_fee_numerator,
