@@ -2,7 +2,7 @@ use crate::common;
 use anyhow::Result;
 
 use common::rpc;
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
 
 #[derive(Clone, Copy, Debug)]
@@ -111,12 +111,12 @@ pub fn get_amm_pda_keys(
     })
 }
 
-pub fn load_amm_keys(
+pub async fn load_amm_keys(
     client: &RpcClient,
     amm_program: &Pubkey,
     amm_pool: &Pubkey,
 ) -> Result<AmmKeys> {
-    let amm = rpc::get_account::<raydium_amm::state::AmmInfo>(client, &amm_pool)?.unwrap();
+    let amm = rpc::get_account::<raydium_amm::state::AmmInfo>(client, &amm_pool).await?.unwrap();
     Ok(AmmKeys {
         amm_pool: *amm_pool,
         amm_target: amm.target_orders,

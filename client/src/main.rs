@@ -4,10 +4,10 @@ use anyhow::{format_err, Result};
 use raydium_library::amm;
 use std::str::FromStr;
 
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{pubkey::Pubkey, signature::Signer, transaction::Transaction};
 
-fn send_init_amm_pool_tx() -> Result<()> {
+async fn send_init_amm_pool_tx() -> Result<()> {
     // config params
     let wallet_file_path = "id.json";
     let cluster_url = "https://api.devnet.solana.com/";
@@ -60,15 +60,15 @@ fn send_init_amm_pool_tx() -> Result<()> {
         &vec![build_init_instruction],
         Some(&wallet.pubkey()),
         &vec![&wallet],
-        client.get_latest_blockhash()?,
+        client.get_latest_blockhash().await?,
     );
-    let sig = raydium_library::common::rpc::send_txn(&client, &txn, true)?;
+    let sig = raydium_library::common::rpc::send_txn(&client, &txn, true).await?;
     println!("amm_pool_id:{}", amm_keys.amm_pool);
     println!("sig:{:#?}", sig);
     Ok(())
 }
 
-fn send_deposit_amm_pool_tx() -> Result<()> {
+async fn send_deposit_amm_pool_tx() -> Result<()> {
     // config params
     let wallet_file_path = "id.json";
     let cluster_url = "https://api.devnet.solana.com/";
@@ -83,13 +83,13 @@ fn send_deposit_amm_pool_tx() -> Result<()> {
         .map_err(|_| format_err!("failed to read keypair from {}", wallet_file_path))?;
 
     // load amm keys
-    let amm_keys = raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id)?;
+    let amm_keys = raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id).await?;
     // load market keys
     let market_keys = raydium_library::amm::openbook::get_keys_for_market(
         &client,
         &amm_keys.market_program,
         &amm_keys.market,
-    )?;
+    ).await?;
     // calculate amm pool vault with load data at the same time or use simulate to calculate
     let result = raydium_library::amm::calculate_pool_vault_amounts(
         &client,
@@ -98,7 +98,7 @@ fn send_deposit_amm_pool_tx() -> Result<()> {
         &amm_keys,
         &market_keys,
         amm::utils::CalculateMethod::Simulate(wallet.pubkey()),
-    )?;
+    ).await?;
     let (max_coin_amount, max_pc_amount) =
         raydium_library::amm::amm_math::deposit_amount_with_slippage(
             result.pool_pc_vault_amount,
@@ -136,14 +136,14 @@ fn send_deposit_amm_pool_tx() -> Result<()> {
         &vec![build_deposit_instruction],
         Some(&wallet.pubkey()),
         &vec![&wallet],
-        client.get_latest_blockhash()?,
+        client.get_latest_blockhash().await?,
     );
-    let sig = raydium_library::common::rpc::send_txn(&client, &txn, true)?;
+    let sig = raydium_library::common::rpc::send_txn(&client, &txn, true).await?;
     println!("sig:{:#?}", sig);
     Ok(())
 }
 
-fn send_withdraw_amm_pool_tx() -> Result<()> {
+async fn send_withdraw_amm_pool_tx() -> Result<()> {
     // config params
     let wallet_file_path = "id.json";
     let cluster_url = "https://api.devnet.solana.com/";
@@ -157,13 +157,13 @@ fn send_withdraw_amm_pool_tx() -> Result<()> {
         .map_err(|_| format_err!("failed to read keypair from {}", wallet_file_path))?;
 
     // load amm keys
-    let amm_keys = raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id)?;
+    let amm_keys = raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id).await?;
     // load market keys
     let market_keys = raydium_library::amm::openbook::get_keys_for_market(
         &client,
         &amm_keys.market_program,
         &amm_keys.market,
-    )?;
+    ).await?;
 
     let build_withdraw_instruction = raydium_library::amm::instructions::withdraw(
         &amm_program,
@@ -190,14 +190,14 @@ fn send_withdraw_amm_pool_tx() -> Result<()> {
         &vec![build_withdraw_instruction],
         Some(&wallet.pubkey()),
         &vec![&wallet],
-        client.get_latest_blockhash()?,
+        client.get_latest_blockhash().await?,
     );
-    let sig = raydium_library::common::rpc::send_txn(&client, &txn, true)?;
+    let sig = raydium_library::common::rpc::send_txn(&client, &txn, true).await?;
     println!("sig:{:#?}", sig);
     Ok(())
 }
 
-fn send_swap_tx() -> Result<()> {
+async fn send_swap_tx() -> Result<()> {
     // config params
     let wallet_file_path = "id.json";
     let cluster_url = "https://api.devnet.solana.com/";
@@ -214,13 +214,13 @@ fn send_swap_tx() -> Result<()> {
         .map_err(|_| format_err!("failed to read keypair from {}", wallet_file_path))?;
 
     // load amm keys
-    let amm_keys = raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id)?;
+    let amm_keys = raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id).await?;
     // load market keys
     let market_keys = raydium_library::amm::openbook::get_keys_for_market(
         &client,
         &amm_keys.market_program,
         &amm_keys.market,
-    )?;
+    ).await?;
     // calculate amm pool vault with load data at the same time or use simulate to calculate
     let result = raydium_library::amm::calculate_pool_vault_amounts(
         &client,
@@ -229,7 +229,7 @@ fn send_swap_tx() -> Result<()> {
         &amm_keys,
         &market_keys,
         amm::utils::CalculateMethod::Simulate(wallet.pubkey()),
-    )?;
+    ).await?;
     let direction = if input_token_mint == amm_keys.amm_coin_mint
         && output_token_mint == amm_keys.amm_pc_mint
     {
@@ -275,9 +275,9 @@ fn send_swap_tx() -> Result<()> {
         &vec![build_swap_instruction],
         Some(&wallet.pubkey()),
         &vec![&wallet],
-        client.get_latest_blockhash()?,
+        client.get_latest_blockhash().await?,
     );
-    let sig = raydium_library::common::rpc::send_txn(&client, &txn, true)?;
+    let sig = raydium_library::common::rpc::send_txn(&client, &txn, true).await?;
     println!("sig:{:#?}", sig);
     Ok(())
 }

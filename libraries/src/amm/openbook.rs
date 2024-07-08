@@ -9,7 +9,7 @@ use safe_transmute::{
     transmute_many_pedantic, transmute_one_pedantic,
 };
 use serum_dex::state::{gen_vault_signer_key, AccountFlag, Market, MarketState, MarketStateV2};
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
     instruction::Instruction,
     pubkey::Pubkey,
@@ -70,12 +70,12 @@ fn remove_dex_account_padding<'a>(data: &'a [u8]) -> Result<Cow<'a, [u64]>> {
 }
 
 #[cfg(target_endian = "little")]
-pub fn get_keys_for_market<'a>(
+pub async fn get_keys_for_market<'a>(
     client: &'a RpcClient,
     program_id: &'a Pubkey,
     market: &'a Pubkey,
 ) -> Result<MarketPubkeys> {
-    let account_data: Vec<u8> = client.get_account_data(&market)?;
+    let account_data: Vec<u8> = client.get_account_data(&market).await?;
     let words: Cow<[u64]> = remove_dex_account_padding(&account_data)?;
     let market_state: MarketState = {
         let account_flags = Market::account_flags(&account_data)?;
@@ -132,8 +132,8 @@ pub fn get_keys_for_market<'a>(
 }
 
 #[cfg(target_endian = "little")]
-pub fn get_open_order<'a>(client: &'a RpcClient, open_order: &'a Pubkey) -> Result<()> {
-    let open_order_data = &mut client.get_account_data(open_order)?;
+pub async fn get_open_order<'a>(client: &'a RpcClient, open_order: &'a Pubkey) -> Result<()> {
+    let open_order_data = &mut client.get_account_data(open_order).await?;
     let (_, data, _) =
         array_refs![&*open_order_data, 5, std::mem::size_of::<serum_dex::state::OpenOrders>();..;];
     let open_orders = unsafe {
@@ -161,7 +161,7 @@ fn hash_accounts(val: &[u64; 4]) -> u64 {
     val.iter().fold(0, |a, b| b.wrapping_add(a))
 }
 
-pub fn list_market(
+pub async fn list_market(
     client: &RpcClient,
     program_id: &Pubkey,
     payer: &Keypair,
@@ -170,7 +170,7 @@ pub fn list_market(
     coin_lot_size: u64,
     pc_lot_size: u64,
 ) -> Result<MarketPubkeys> {
-    let (listing_keys, mut instructions) = gen_listing_params(client, program_id, &payer.pubkey())?;
+    let (listing_keys, mut instructions) = gen_listing_params(client, program_id, &payer.pubkey()).await?;
     let ListingKeys {
         market_key,
         req_q_key,
@@ -210,7 +210,7 @@ pub fn list_market(
 
     instructions.push(init_market_instruction);
 
-    let recent_hash = client.get_latest_blockhash()?;
+    let recent_hash = client.get_latest_blockhash().await?;
     let signers = vec![
         payer,
         &market_key,
@@ -229,7 +229,7 @@ pub fn list_market(
     );
 
     println!("Listing {} ...", market_key.pubkey());
-    let sig = rpc::send_txn(client, &txn, true);
+    let sig = rpc::send_txn(client, &txn, true).await;
     println!("sig:{:#?}", sig);
     let ten_millis = time::Duration::from_millis(15000);
     thread::sleep(ten_millis);
@@ -260,18 +260,18 @@ struct ListingKeys {
     vault_signer_nonce: u64,
 }
 
-fn gen_listing_params(
+async fn gen_listing_params(
     client: &RpcClient,
     program_id: &Pubkey,
     payer: &Pubkey,
 ) -> Result<(ListingKeys, Vec<Instruction>)> {
     // https://explorer.solana.com/tx/5ffFbv7m5nozcqVFsKC3o384Wesme4WNeChNUP4EPaEGnL7wQ1ZeUpvQUvp43BF5hc45pqnNpEiVHdWdzCTvQHQg
     let (market_key, create_market) =
-        create_dex_account(client, program_id, payer, size_of::<MarketState>())?;
-    let (req_q_key, create_req_q) = create_dex_account(client, program_id, payer, 5120)?;
-    let (event_q_key, create_event_q) = create_dex_account(client, program_id, payer, 1 << 18)?;
-    let (bids_key, create_bids) = create_dex_account(client, program_id, payer, 1 << 16)?;
-    let (asks_key, create_asks) = create_dex_account(client, program_id, payer, 1 << 16)?;
+        create_dex_account(client, program_id, payer, size_of::<MarketState>()).await?;
+    let (req_q_key, create_req_q) = create_dex_account(client, program_id, payer, 5120).await?;
+    let (event_q_key, create_event_q) = create_dex_account(client, program_id, payer, 1 << 18).await?;
+    let (bids_key, create_bids) = create_dex_account(client, program_id, payer, 1 << 16).await?;
+    let (asks_key, create_asks) = create_dex_account(client, program_id, payer, 1 << 16).await?;
     let (vault_signer_nonce, vault_signer_pk) = {
         let mut i = 0;
         loop {
@@ -301,7 +301,7 @@ fn gen_listing_params(
     Ok((info, instructions))
 }
 
-fn gen_account_instr(
+async fn gen_account_instr(
     client: &RpcClient,
     program_id: &Pubkey,
     payer: &Pubkey,
@@ -311,14 +311,14 @@ fn gen_account_instr(
     let create_account_instr = solana_sdk::system_instruction::create_account(
         payer,
         key,
-        client.get_minimum_balance_for_rent_exemption(unpadded_len)?,
+        client.get_minimum_balance_for_rent_exemption(unpadded_len).await?,
         unpadded_len as u64,
         program_id,
     );
     Ok(create_account_instr)
 }
 
-fn create_dex_account(
+async fn create_dex_account(
     client: &RpcClient,
     program_id: &Pubkey,
     payer: &Pubkey,
@@ -326,6 +326,6 @@ fn create_dex_account(
 ) -> Result<(Keypair, Instruction)> {
     let key = Keypair::new();
     let len = unpadded_len + 12;
-    let instr = gen_account_instr(client, program_id, payer, &key.pubkey(), len)?;
+    let instr = gen_account_instr(client, program_id, payer, &key.pubkey(), len).await?;
     Ok((key, instr))
 }
