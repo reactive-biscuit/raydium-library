@@ -83,13 +83,15 @@ async fn send_deposit_amm_pool_tx() -> Result<()> {
         .map_err(|_| format_err!("failed to read keypair from {}", wallet_file_path))?;
 
     // load amm keys
-    let amm_keys = raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id).await?;
+    let amm_keys =
+        raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id).await?;
     // load market keys
     let market_keys = raydium_library::amm::openbook::get_keys_for_market(
         &client,
         &amm_keys.market_program,
         &amm_keys.market,
-    ).await?;
+    )
+    .await?;
     // calculate amm pool vault with load data at the same time or use simulate to calculate
     let result = raydium_library::amm::calculate_pool_vault_amounts(
         &client,
@@ -98,7 +100,8 @@ async fn send_deposit_amm_pool_tx() -> Result<()> {
         &amm_keys,
         &market_keys,
         amm::utils::CalculateMethod::Simulate(wallet.pubkey()),
-    ).await?;
+    )
+    .await?;
     let (max_coin_amount, max_pc_amount) =
         raydium_library::amm::amm_math::deposit_amount_with_slippage(
             result.pool_pc_vault_amount,
@@ -157,13 +160,15 @@ async fn send_withdraw_amm_pool_tx() -> Result<()> {
         .map_err(|_| format_err!("failed to read keypair from {}", wallet_file_path))?;
 
     // load amm keys
-    let amm_keys = raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id).await?;
+    let amm_keys =
+        raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id).await?;
     // load market keys
     let market_keys = raydium_library::amm::openbook::get_keys_for_market(
         &client,
         &amm_keys.market_program,
         &amm_keys.market,
-    ).await?;
+    )
+    .await?;
 
     let build_withdraw_instruction = raydium_library::amm::instructions::withdraw(
         &amm_program,
@@ -214,13 +219,15 @@ async fn send_swap_tx() -> Result<()> {
         .map_err(|_| format_err!("failed to read keypair from {}", wallet_file_path))?;
 
     // load amm keys
-    let amm_keys = raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id).await?;
+    let amm_keys =
+        raydium_library::amm::utils::load_amm_keys(&client, &amm_program, &amm_pool_id).await?;
     // load market keys
     let market_keys = raydium_library::amm::openbook::get_keys_for_market(
         &client,
         &amm_keys.market_program,
         &amm_keys.market,
-    ).await?;
+    )
+    .await?;
     // calculate amm pool vault with load data at the same time or use simulate to calculate
     let result = raydium_library::amm::calculate_pool_vault_amounts(
         &client,
@@ -229,7 +236,8 @@ async fn send_swap_tx() -> Result<()> {
         &amm_keys,
         &market_keys,
         amm::utils::CalculateMethod::Simulate(wallet.pubkey()),
-    ).await?;
+    )
+    .await?;
     let direction = if input_token_mint == amm_keys.amm_coin_mint
         && output_token_mint == amm_keys.amm_pc_mint
     {

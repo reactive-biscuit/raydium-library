@@ -170,7 +170,8 @@ pub async fn list_market(
     coin_lot_size: u64,
     pc_lot_size: u64,
 ) -> Result<MarketPubkeys> {
-    let (listing_keys, mut instructions) = gen_listing_params(client, program_id, &payer.pubkey()).await?;
+    let (listing_keys, mut instructions) =
+        gen_listing_params(client, program_id, &payer.pubkey()).await?;
     let ListingKeys {
         market_key,
         req_q_key,
@@ -269,7 +270,8 @@ async fn gen_listing_params(
     let (market_key, create_market) =
         create_dex_account(client, program_id, payer, size_of::<MarketState>()).await?;
     let (req_q_key, create_req_q) = create_dex_account(client, program_id, payer, 5120).await?;
-    let (event_q_key, create_event_q) = create_dex_account(client, program_id, payer, 1 << 18).await?;
+    let (event_q_key, create_event_q) =
+        create_dex_account(client, program_id, payer, 1 << 18).await?;
     let (bids_key, create_bids) = create_dex_account(client, program_id, payer, 1 << 16).await?;
     let (asks_key, create_asks) = create_dex_account(client, program_id, payer, 1 << 16).await?;
     let (vault_signer_nonce, vault_signer_pk) = {
@@ -311,7 +313,9 @@ async fn gen_account_instr(
     let create_account_instr = solana_sdk::system_instruction::create_account(
         payer,
         key,
-        client.get_minimum_balance_for_rent_exemption(unpadded_len).await?,
+        client
+            .get_minimum_balance_for_rent_exemption(unpadded_len)
+            .await?,
         unpadded_len as u64,
         program_id,
     );

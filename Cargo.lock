@@ -2928,8 +2928,9 @@ dependencies = [
 [[package]]
 name = "raydium_amm"
 version = "0.3.0"
-source = "git+https://github.com/reactive-biscuit/raydium-amm.git?branch=patch/solana-v1.18.16#b4423f5b834dea4eebbc2f9e82550d12dcc810c3"
+source = "git+https://github.com/reactive-biscuit/raydium-amm.git?branch=u128-fix#76a642514fbdbbdf406601eeb67261a803969e69"
 dependencies = [
+ "anyhow",
  "arrayref",
  "arrform",
  "base64 0.13.1",
@@ -2941,7 +2942,9 @@ dependencies = [
  "serde",
  "serde_json",
  "serum_dex",
+ "solana-client",
  "solana-program",
+ "solana-sdk",
  "spl-associated-token-account",
  "spl-token 4.0.0",
  "thiserror",

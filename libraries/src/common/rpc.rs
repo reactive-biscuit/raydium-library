@@ -11,15 +11,21 @@ use solana_sdk::{
 };
 use solana_transaction_status::UiTransactionEncoding;
 
-pub async fn send_txn(client: &RpcClient, txn: &Transaction, skip_preflight: bool) -> Result<Signature> {
-    Ok(client.send_and_confirm_transaction_with_spinner_and_config(
-        txn,
-        CommitmentConfig::confirmed(),
-        RpcSendTransactionConfig {
-            skip_preflight,
-            ..RpcSendTransactionConfig::default()
-        },
-    ).await?)
+pub async fn send_txn(
+    client: &RpcClient,
+    txn: &Transaction,
+    skip_preflight: bool,
+) -> Result<Signature> {
+    Ok(client
+        .send_and_confirm_transaction_with_spinner_and_config(
+            txn,
+            CommitmentConfig::confirmed(),
+            RpcSendTransactionConfig {
+                skip_preflight,
+                ..RpcSendTransactionConfig::default()
+            },
+        )
+        .await?)
 }
 
 pub async fn simulate_transaction(
@@ -38,13 +44,15 @@ pub async fn simulate_transaction(
 }
 
 pub async fn send_without_confirm_txn(client: &RpcClient, txn: &Transaction) -> Result<Signature> {
-    Ok(client.send_transaction_with_config(
-        txn,
-        RpcSendTransactionConfig {
-            skip_preflight: true,
-            ..RpcSendTransactionConfig::default()
-        },
-    ).await?)
+    Ok(client
+        .send_transaction_with_config(
+            txn,
+            RpcSendTransactionConfig {
+                skip_preflight: true,
+                ..RpcSendTransactionConfig::default()
+            },
+        )
+        .await?)
 }
 
 pub async fn get_account<T>(client: &RpcClient, addr: &Pubkey) -> Result<Option<T>>
@@ -52,7 +60,8 @@ where
     T: Clone,
 {
     if let Some(account) = client
-        .get_account_with_commitment(addr, CommitmentConfig::processed()).await?
+        .get_account_with_commitment(addr, CommitmentConfig::processed())
+        .await?
         .value
     {
         let account_data = account.data.as_slice();
@@ -61,6 +70,14 @@ where
     } else {
         Ok(None)
     }
+}
+
+pub async fn get_amm_info_account(
+    client: &RpcClient,
+    addr: &Pubkey,
+) -> Result<Option<raydium_amm::state::AmmInfo>> {
+    let hack = get_account::<raydium_amm::amm_info_hack::AmmInfoHack>(client, addr).await?;
+    Ok(hack.map(raydium_amm::state::AmmInfo::from))
 }
 
 pub fn deserialize_account<T: Copy>(account: &Account, is_anchor_account: bool) -> Result<T> {

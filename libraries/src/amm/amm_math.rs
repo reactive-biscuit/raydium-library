@@ -59,11 +59,12 @@ pub async fn calculate_pool_vault_amounts(
             let accounts = array_ref![rsps, 0, 7];
             let [amm_account, amm_target_account, amm_pc_vault_account, amm_coin_vault_account, amm_open_orders_account, market_account, market_event_q_account] =
                 accounts;
-            let amm: raydium_amm::state::AmmInfo =
-                transmute_one_pedantic::<raydium_amm::state::AmmInfo>(transmute_to_bytes(
-                    &amm_account.as_ref().unwrap().clone().data,
-                ))
+            let amm: raydium_amm::amm_info_hack::AmmInfoHack =
+                transmute_one_pedantic::<raydium_amm::amm_info_hack::AmmInfoHack>(
+                    transmute_to_bytes(&amm_account.as_ref().unwrap().clone().data),
+                )
                 .map_err(|e| e.without_src())?;
+            let amm = raydium_amm::state::AmmInfo::from(amm);
             let _amm_target: raydium_amm::state::TargetOrders =
                 transmute_one_pedantic::<raydium_amm::state::TargetOrders>(transmute_to_bytes(
                     &amm_target_account.as_ref().unwrap().clone().data,
@@ -154,7 +155,7 @@ pub async fn calculate_pool_vault_amounts(
             }
         }
         CalculateMethod::Simulate(fee_payer) => {
-            let amm = rpc::get_account::<raydium_amm::state::AmmInfo>(client, amm_pool).await?.unwrap();
+            let amm = rpc::get_amm_info_account(client, amm_pool).await?.unwrap();
             let simulate_pool_info_instruction = raydium_amm::instruction::simulate_get_pool_info(
                 amm_program,
                 amm_pool,
@@ -171,7 +172,8 @@ pub async fn calculate_pool_vault_amounts(
             message.recent_blockhash = client.get_latest_blockhash().await?;
             let txn = Transaction::new_unsigned(message);
             let result =
-                rpc::simulate_transaction(&client, &txn, false, CommitmentConfig::confirmed()).await?;
+                rpc::simulate_transaction(&client, &txn, false, CommitmentConfig::confirmed())
+                    .await?;
             // println!("{:#?}", result);
             let mut ret = raydium_amm::state::GetPoolData::default();
             if result.value.err.is_none() {

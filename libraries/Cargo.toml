@@ -13,9 +13,12 @@ raydium-amm-v3 = { git = "https://github.com/reactive-biscuit/raydium-clmm.git",
 serum_dex = { version = "0.5.10", git = "https://github.com/reactive-biscuit/openbook-dex.git", branch = "patch/solana-v1.18.16", default-features = false, features = [
     "client",
 ] }
-raydium_amm = { git = "https://github.com/reactive-biscuit/raydium-amm.git", branch = "patch/solana-v1.18.16", default-features = false, features = [
+raydium_amm = { git = "https://github.com/reactive-biscuit/raydium-amm.git", branch = "u128-fix", default-features = false, features = [
     "client",
 ] }
+#raydium_amm = { git = "https://github.com/reactive-biscuit/raydium-amm.git", branch = "patch/solana-v1.18.16", default-features = false, features = [
+#    "client",
+#] }
 spl-token = { version = "4.0.0", features = ["no-entrypoint"] }
 spl-associated-token-account = { version = "2.2.0", features = [
     "no-entrypoint",

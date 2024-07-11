@@ -117,7 +117,7 @@ pub async fn load_amm_keys(
     amm_program: &Pubkey,
     amm_pool: &Pubkey,
 ) -> Result<AmmKeys> {
-    let amm = rpc::get_account::<raydium_amm::state::AmmInfo>(client, &amm_pool).await?.unwrap();
+    let amm = rpc::get_amm_info_account(client, amm_pool).await?.unwrap();
     Ok(AmmKeys {
         amm_pool: *amm_pool,
         amm_target: amm.target_orders,
@@ -143,23 +143,26 @@ pub async fn load_amm_keys2(
     amm_program: &Pubkey,
     amm_pool: &Pubkey,
 ) -> Result<(AmmKeys, AmmInfo)> {
-    let amm = rpc::get_account::<raydium_amm::state::AmmInfo>(client, &amm_pool).await?.unwrap();
-    Ok((AmmKeys {
-        amm_pool: *amm_pool,
-        amm_target: amm.target_orders,
-        amm_coin_vault: amm.coin_vault,
-        amm_pc_vault: amm.pc_vault,
-        amm_lp_mint: amm.lp_mint,
-        amm_open_order: amm.open_orders,
-        amm_coin_mint: amm.coin_vault_mint,
-        amm_pc_mint: amm.pc_vault_mint,
-        amm_authority: raydium_amm::processor::Processor::authority_id(
-            amm_program,
-            raydium_amm::processor::AUTHORITY_AMM,
-            amm.nonce as u8,
-        )?,
-        market: amm.market,
-        market_program: amm.market_program,
-        nonce: amm.nonce as u8,
-    }, amm))
+    let amm = rpc::get_amm_info_account(client, amm_pool).await?.unwrap();
+    Ok((
+        AmmKeys {
+            amm_pool: *amm_pool,
+            amm_target: amm.target_orders,
+            amm_coin_vault: amm.coin_vault,
+            amm_pc_vault: amm.pc_vault,
+            amm_lp_mint: amm.lp_mint,
+            amm_open_order: amm.open_orders,
+            amm_coin_mint: amm.coin_vault_mint,
+            amm_pc_mint: amm.pc_vault_mint,
+            amm_authority: raydium_amm::processor::Processor::authority_id(
+                amm_program,
+                raydium_amm::processor::AUTHORITY_AMM,
+                amm.nonce as u8,
+            )?,
+            market: amm.market,
+            market_program: amm.market_program,
+            nonce: amm.nonce as u8,
+        },
+        amm,
+    ))
 }
