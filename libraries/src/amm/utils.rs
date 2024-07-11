@@ -142,8 +142,12 @@ pub async fn load_amm_keys2(
     client: &RpcClient,
     amm_program: &Pubkey,
     amm_pool: &Pubkey,
+    amm_info: Option<&AmmInfo>,
 ) -> Result<(AmmKeys, AmmInfo)> {
-    let amm = rpc::get_amm_info_account(client, amm_pool).await?.unwrap();
+    let amm = match amm_info {
+        Some(info) => *info,
+        None => rpc::get_amm_info_account(client, amm_pool).await?.unwrap(),
+    };
     Ok((
         AmmKeys {
             amm_pool: *amm_pool,
