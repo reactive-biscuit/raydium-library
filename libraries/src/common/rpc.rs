@@ -88,6 +88,18 @@ pub fn deserialize_account<T: Copy>(account: &Account, is_anchor_account: bool) 
     Ok(unsafe { *(&account_data[0] as *const u8 as *const T) })
 }
 
+pub fn deserialize_account2<R: Copy, T: From<R>>(
+    account: &Account,
+    is_anchor_account: bool,
+) -> Result<T> {
+    let mut account_data = account.data.as_slice();
+    if is_anchor_account {
+        account_data = &account_data[8..std::mem::size_of::<R>() + 8];
+    }
+    let r = unsafe { *(&account_data[0] as *const u8 as *const R) };
+    Ok(r.into())
+}
+
 pub async fn get_multiple_accounts(
     client: &RpcClient,
     pubkeys: &[Pubkey],
